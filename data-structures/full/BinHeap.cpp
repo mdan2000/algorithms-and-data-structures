@@ -34,19 +34,8 @@ public:
         size_(0),
         cmp(cmpFunc) {};
 
-    BinHeap(std::list<std::shared_ptr<BinHeapNode>>& newChilds,
-        const std::function<bool(T, T)>& cmpFunc) :
-        cmp(cmpFunc)
-    {
-        Heap_ = newChilds;
-        size_t newSize_ = 0;
-        for (const auto& c : Heap_) {
-            newSize_ += (1u << c->degree);
-        }
-        size_ = newSize_;
-    }
-
     void Add(const T& newKey) {
+        
         std::shared_ptr<BinHeapNode> node = std::make_shared<BinHeapNode>();
         node->key = newKey;
         auto it = Heap_.begin();
@@ -55,28 +44,35 @@ public:
                 (*it)->childs.insert((*it)->childs.end(), node);
                 (*it)->degree++;
                 node = *it;
-                it = Heap_.erase(it);
             }
             else {
                 node->childs.insert(node->childs.end(), *it);
                 node->degree++;
-                it = Heap_.erase(it);
             }
+            if (it == MinNode_) {
+                MinNode_ = Heap_.end();
+            }
+            it = Heap_.erase(it);
         }
-        Heap_.insert(it, node);
+        if (MinNode_ == Heap_.end() || cmp(node->key, (*MinNode_)->key)) {
+            MinNode_ = Heap_.insert(it, node);
+        }
+        else {
+            Heap_.insert(it, node);
+        }
         ++size_;
     }
 
-    void Merge(BinHeap& r) {
+    void Merge(std::list<std::shared_ptr<BinHeapNode>>& r) {
         auto l = *this;
         auto itl = l.Heap_.begin();
-        auto itr = r.Heap_.begin();
+        auto itr = r.begin();
         std::list<std::shared_ptr<BinHeapNode>> newHeap;
-        while (itl != l.Heap_.end() && itr != r.Heap_.end()) {
+        while (itl != l.Heap_.end() && itr != r.end()) {
             if ((*itl)->degree == (*itr)->degree) {
                 newHeap.insert(newHeap.end(), MergeEqualHeap(*itl, *itr));
                 itl = l.Heap_.erase(itl);
-                itr = r.Heap_.erase(itr);
+                itr = r.erase(itr);
             }
             else if (!newHeap.empty() && (*itl)->degree == newHeap.back()->degree) {
                 auto node = newHeap.back();
@@ -88,7 +84,7 @@ public:
                 auto node = newHeap.back();
                 newHeap.pop_back();
                 newHeap.insert(newHeap.end(), MergeEqualHeap(node, *itr));
-                itr = r.Heap_.erase(itr);
+                itr = r.erase(itr);
             }
             else {
                 if (cmp((*itl)->key, (*itr)->key)) {
@@ -97,7 +93,7 @@ public:
                 }
                 else {
                     newHeap.insert(newHeap.end(), *itr);
-                    itr = r.Heap_.erase(itr);
+                    itr = r.erase(itr);
                 }
             }
         }
@@ -107,9 +103,9 @@ public:
             itl = l.Heap_.erase(itl);
         }
 
-        while (itr != r.Heap_.end()) {
+        while (itr != r.end()) {
             newHeap.insert(newHeap.end(), *itr);
-            itr = r.Heap_.erase(itr);
+            itr = r.erase(itr);
         }
         Heap_ = newHeap;
     }
@@ -122,28 +118,23 @@ public:
         if (Heap_.empty()) {
             return {}; // throw???
         }
-        T res = Heap_.front()->key;
-        for (const auto& node : Heap_) {
-            if (cmp(node->key, res)) {
-                res = node->key;
-            }
-        }
-        return res;
+        return (*MinNode_)->key;
     }
 
     void Erase() {
         if (Heap_.empty()) {
             throw std::runtime_error("Erase from empty BinHeap");
         }
-        auto minEl = Heap_.begin();
+        std::list<std::shared_ptr<BinHeapNode>> newChilds = (*MinNode_)->childs;
+        Heap_.erase(MinNode_);
+        this->Merge(newChilds);
+
+        MinNode_ = Heap_.begin();
         for (auto it = Heap_.begin(); it != Heap_.end(); ++it) {
-            if (cmp((*it)->key, (*minEl)->key)) {
-                minEl = it;
+            if (cmp((*it)->key, (*MinNode_)->key)) {
+                MinNode_ = it;
             }
         }
-        BinHeap<T> newHeap((*minEl)->childs, cmp);
-        Heap_.erase(minEl);
-        this->Merge(newHeap);
         size_--;
     }
 
@@ -169,6 +160,7 @@ public:
 private:
     size_t size_;
     std::list<std::shared_ptr<BinHeapNode>> Heap_;
+    typename std::list<std::shared_ptr<BinHeapNode>>::iterator MinNode_ = Heap_.end();
     std::function<bool(T, T)> cmp = [](const T& l, const T& r) {
         return l < r;
     };
