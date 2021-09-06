@@ -67,6 +67,7 @@ public:
         auto itl = Heap_.begin();
         auto itr = r.begin();
         std::list<std::shared_ptr<BinHeapNode>> newHeap;
+        std::shared_ptr<BinHeapNode> node;
         while (itl != Heap_.end() && itr != r.end()) {
             if ((*itl)->degree == (*itr)->degree) {
                 newHeap.insert(newHeap.end(), MergeEqualHeap(*itl, *itr));
@@ -74,13 +75,13 @@ public:
                 itr = r.erase(itr);
             }
             else if (!newHeap.empty() && (*itl)->degree == newHeap.back()->degree) {
-                auto node = newHeap.back();
+                node = newHeap.back();
                 newHeap.pop_back();
                 newHeap.insert(newHeap.end(), MergeEqualHeap(node, *itl));
                 itl = Heap_.erase(itl);
             }
             else if (!newHeap.empty() && (*itr)->degree == newHeap.back()->degree) {
-                auto node = newHeap.back();
+                node = newHeap.back();
                 newHeap.pop_back();
                 newHeap.insert(newHeap.end(), MergeEqualHeap(node, *itr));
                 itr = r.erase(itr);
@@ -97,15 +98,12 @@ public:
             }
         }
 
-        while (itl != Heap_.end()) {
-            newHeap.insert(newHeap.end(), *itl);
-            itl = Heap_.erase(itl);
-        }
+        newHeap.insert(newHeap.end(), itl, Heap_.end());
+        Heap_.clear();
 
-        while (itr != r.end()) {
-            newHeap.insert(newHeap.end(), *itr);
-            itr = r.erase(itr);
-        }
+        newHeap.insert(newHeap.end(), itr, r.end());
+        r.clear();
+
         Heap_ = newHeap;
     }
 
@@ -139,20 +137,6 @@ public:
 
     bool empty() const {
         return size_ == 0;
-    }
-
-    ~BinHeap() {
-        std::queue<std::shared_ptr<BinHeapNode>> q;
-        for (const auto& node : Heap_) {
-            q.push(node);
-            while (!q.empty()) {
-                for (const auto& cnode : q.front()->childs) {
-                    q.push(cnode);
-                }
-                q.front().reset();
-                q.pop();
-            }
-        }
     }
 
 private:
