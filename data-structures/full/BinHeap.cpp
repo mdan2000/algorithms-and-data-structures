@@ -66,45 +66,38 @@ public:
     void Merge(std::list<std::shared_ptr<BinHeapNode>>& r) {
         auto itl = Heap_.begin();
         auto itr = r.begin();
-        std::list<std::shared_ptr<BinHeapNode>> newHeap;
-        std::shared_ptr<BinHeapNode> node;
+        typename std::list<std::shared_ptr<BinHeapNode>>::iterator node;
         while (itl != Heap_.end() && itr != r.end()) {
             if ((*itl)->degree == (*itr)->degree) {
-                newHeap.insert(newHeap.end(), MergeEqualHeap(*itl, *itr));
-                itl = Heap_.erase(itl);
-                itr = r.erase(itr);
+                Heap_.insert(itl, MergeEqualHeap(*itl, *itr)); // вставляем вперёд itl
+                itl = Heap_.erase(itl); // переходим на то, что вставили
+                ++itr;
             }
-            else if (!newHeap.empty() && (*itl)->degree == newHeap.back()->degree) {
-                node = newHeap.back();
-                newHeap.pop_back();
-                newHeap.insert(newHeap.end(), MergeEqualHeap(node, *itl));
-                itl = Heap_.erase(itl);
+            else if (itl != Heap_.begin() && (*itl)->degree == (*prev(itl))->degree) {
+                node = prev(itl); // верх новой кучи
+                Heap_.insert(node, MergeEqualHeap(*node, *itl)); // вставляем по itl
+                Heap_.erase(node); // удаляем предыдущий элемент
+                itl = Heap_.erase(itl); //
             }
-            else if (!newHeap.empty() && (*itr)->degree == newHeap.back()->degree) {
-                node = newHeap.back();
-                newHeap.pop_back();
-                newHeap.insert(newHeap.end(), MergeEqualHeap(node, *itr));
-                itr = r.erase(itr);
+            else if (itl != Heap_.begin() && (*itr)->degree == (*prev(itl))->degree) {
+                node = prev(itl);
+                Heap_.insert(node, MergeEqualHeap(*node, *itr));
+                Heap_.erase(node);
+                ++itr;
             }
             else {
                 if (cmp((*itl)->key, (*itr)->key)) {
-                    newHeap.insert(newHeap.end(), *itl);
-                    itl = Heap_.erase(itl);
+                    ++itl;
                 }
                 else {
-                    newHeap.insert(newHeap.end(), *itr);
-                    itr = r.erase(itr);
+                    Heap_.insert(itl, *itr);
+                    ++itr;
                 }
             }
         }
 
-        newHeap.insert(newHeap.end(), itl, Heap_.end());
-        Heap_.clear();
-
-        newHeap.insert(newHeap.end(), itr, r.end());
+        Heap_.insert(Heap_.end(), itr, r.end());
         r.clear();
-
-        Heap_ = newHeap;
     }
 
     size_t size() const {
