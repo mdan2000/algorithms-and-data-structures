@@ -115,9 +115,9 @@ public:
         if (Heap_.empty()) {
             throw std::runtime_error("Erase from empty BinHeap");
         }
-        std::list<std::shared_ptr<BinHeapNode>> newChilds = (*MinNode_)->childs;
+        std::shared_ptr<BinHeapNode> mn_ptr = *MinNode_;
         Heap_.erase(MinNode_);
-        this->Merge(newChilds);
+        this->Merge(mn_ptr->childs);
 
         MinNode_ = Heap_.begin();
         for (auto it = Heap_.begin(); it != Heap_.end(); ++it) {
