@@ -10,21 +10,24 @@ struct SufMasNode {
 	size_t i;
 };
 
-void RadixSortSufMas(std::vector<SufMasNode>& sm, std::vector<std::vector<SufMasNode>>& s) {
-	s.resize(sm.back().r + 1);
-	
-	for (size_t i = 0; i < sm.size(); ++i) {
-		s[sm[i].l].push_back(sm[i]);
-	}
-	
-	size_t insert = 0;
-	for (auto& i : s) {
-		for (const auto& j : i) {
-			sm[insert++] = j;
-		}
-		i.clear();
+void RadixSortSufMas(std::vector<SufMasNode>& sm) {
+	std::vector<size_t> pos(sm.back().r + 1);
+	pos[0] = 0;
+	for (const auto& node : sm) {
+		pos[node.r]++;
 	}
 
+	for (size_t i = 1; i < pos.size(); ++i) {
+		pos[i] += pos[i - 1];
+	}
+	
+	std::vector<SufMasNode> res(sm.size());
+
+	for (size_t i = 0; i < sm.size(); ++i) {
+		res[pos[sm[i].l - 1]++] = sm[i];
+	}
+	
+	sm = res;
 }
 
 template<typename T>
@@ -58,14 +61,12 @@ std::vector<size_t> MakeSuffixMassive(const T& t) {
 
 	size_t window = 1;
 
-	std::vector<std::vector<SufMasNode>> s(SufMas.back().r + 1);
-
 	while (window < SufMas.size()) {
 		for (size_t i = 0; i < SufMas.size(); ++i) {
 			SufMas[i].l = p[SufMas[i].i];
 		}
 
-		RadixSortSufMas(SufMas, s);
+		RadixSortSufMas(SufMas);
 		
 		p[SufMas.front().i] = 1;
 		for (size_t i = 1; i < n; ++i) {
@@ -87,9 +88,6 @@ std::vector<size_t> MakeSuffixMassive(const T& t) {
 			node.r = p[node.i];
 			node.i = ((2 * n + node.i) - window) % n;
 		}
-		
-		
-		
 	}
 
 	return p;
