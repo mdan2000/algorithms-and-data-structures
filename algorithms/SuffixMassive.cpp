@@ -5,13 +5,13 @@
 #include <string>
 
 struct SufMasNode {
-	size_t l;
-	size_t r;
-	size_t i;
+	int l;
+	int r;
+	int i;
 };
 
 void RadixSortSufMas(std::vector<SufMasNode>& sm) {
-	std::vector<size_t> pos(sm.back().r + 1);
+	std::vector<int> pos(sm.back().r + 1);
 	pos[0] = 0;
 	for (const auto& node : sm) {
 		pos[node.r]++;
@@ -20,28 +20,28 @@ void RadixSortSufMas(std::vector<SufMasNode>& sm) {
 	for (size_t i = 1; i < pos.size(); ++i) {
 		pos[i] += pos[i - 1];
 	}
-	
+
 	std::vector<SufMasNode> res(sm.size());
 
 	for (size_t i = 0; i < sm.size(); ++i) {
 		res[pos[sm[i].l - 1]++] = sm[i];
 	}
-	
+
 	sm = res;
 }
 
 template<typename T>
-std::vector<size_t> MakeSuffixMassive(const T& t) {
+std::vector<int> MakeSuffixMassive(const T& t) {
 	std::vector<SufMasNode> SufMas(t.size());
-	std::vector<size_t> p(t.size());
-	
-	size_t n = t.size();
-	
+	std::vector<int> p(t.size());
+
+	int n = t.size();
+
 	for (size_t i = 0; i < SufMas.size(); ++i) {
 		SufMas[i].i = i;
 	}
-	
-	sort(SufMas.begin(), SufMas.end(), [t, n](const SufMasNode& lhs, const SufMasNode& rhs) {
+
+	sort(SufMas.begin(), SufMas.end(), [&t, n](const SufMasNode& lhs, const SufMasNode& rhs) {
 		return t[(lhs.i + 1) % n] < t[(rhs.i + 1) % n];
 		});
 
@@ -56,7 +56,12 @@ std::vector<size_t> MakeSuffixMassive(const T& t) {
 	}
 
 	for (auto& node : SufMas) {
-		p[(node.i + 1) % n] = node.r;
+		if (node.i + 1 == n) {
+			p[0] = node.r;
+		}
+		else {
+			p[node.i + 1] = node.r;
+		}
 	}
 
 	size_t window = 1;
@@ -67,7 +72,7 @@ std::vector<size_t> MakeSuffixMassive(const T& t) {
 		}
 
 		RadixSortSufMas(SufMas);
-		
+
 		p[SufMas.front().i] = 1;
 		for (size_t i = 1; i < n; ++i) {
 			if (SufMas[i].l == SufMas[i - 1].l && SufMas[i].r == SufMas[i - 1].r) {
@@ -86,7 +91,12 @@ std::vector<size_t> MakeSuffixMassive(const T& t) {
 
 		for (auto& node : SufMas) {
 			node.r = p[node.i];
-			node.i = ((2 * n + node.i) - window) % n;
+			if (window > node.i) {
+				node.i = (n + node.i) - window;
+			}
+			else {
+				node.i = node.i - window;
+			}
 		}
 	}
 
